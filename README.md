@@ -2,39 +2,42 @@
 
 NovaOS is a Puter-inspired web desktop with a ProzillaOS-inspired visual style.
 
-## Run the desktop locally
-
-The GitHub repository displays source code; it does not execute the app. To open the actual desktop:
+## Run locally
 
 ```bash
 npm install
 npm run dev:all
 ```
 
-Open the local URL printed by Vite, normally **http://localhost:5173**. Keep that terminal running. `dev:all` starts both the Vite desktop and the local proxy server.
+Open the Vite URL, normally `http://localhost:5173`. The GitHub page shows source code; the desktop appears only when the app is running.
 
-You can also use two terminals:
+## Install as a PWA
 
-```bash
-npm run dev:server   # terminal 1
-npm run dev          # terminal 2
-```
+PWA installation requires a secure context: an HTTPS deployment or localhost. After deploying the app, open it in Chrome/Edge on Android and choose **Install app**. On iPhone/iPad, open the HTTPS URL in Safari, tap **Share**, then **Add to Home Screen**. The NovaOS desktop includes an Install button when the browser provides an install prompt.
 
-## Browser proxy
-
-The Browser app uses `/api/proxy?url=...`. The server validates HTTP(S) URLs, resolves DNS to block private-network targets, applies a domain allowlist, enforces a timeout, rewrites common document URLs, and adds response hardening headers.
-
-The default allowlist contains example.com, MDN, GitHub, and raw GitHub content. Add domains explicitly when developing:
+For local phone testing, run Vite with a network host and open the computer's LAN address:
 
 ```bash
-PROXY_ALLOWLIST=example.com,developer.mozilla.org,nasa.gov npm run dev:server
+npm run dev:all -- --host 0.0.0.0
 ```
 
-Do not deploy an unrestricted open proxy. Add authentication, rate limiting, logging, a strict allowlist, and stronger HTML sanitization before making it public.
+Then use `http://YOUR_COMPUTER_IP:5173` on the phone. Browser PWA installation may not be available over plain LAN HTTP; deploy over HTTPS for installation.
 
-## Build
+## Android and iPhone packaging
+
+The current project is PWA-ready. To create store-style native wrappers later, use Capacitor after the web app is deployed/built:
 
 ```bash
 npm run build
-npm run preview
+npm install @capacitor/core @capacitor/cli
+npx cap init NovaOS com.eduardo.novaos --web-dir dist
+npx cap add android
+npx cap add ios
+npx cap sync
 ```
+
+Android requires Android Studio; iOS requires macOS and Xcode. The secure proxy should be hosted on HTTPS rather than bundled into a mobile client.
+
+## Proxy safety
+
+The browser uses `/api/proxy?url=...`. The server has an explicit domain allowlist, timeout, DNS private-network blocking, URL rewriting, and response headers. Do not deploy an unrestricted open proxy; add authentication, rate limiting, logging, and stronger HTML sanitization before making it public.
