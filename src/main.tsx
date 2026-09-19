@@ -3,85 +3,24 @@ import { Calculator, FileText, Folder, Globe, Menu, Minus, Search, Settings, Ter
 import './styles.css'
 
 type AppId = 'browser' | 'files' | 'notes' | 'terminal' | 'calculator' | 'settings'
-type WindowState = { id: number; app: AppId; x: number; y: number; width: number; height: number; minimized?: boolean }
-type IconType = typeof Globe
+type Win = { id:number; app:AppId; x:number; y:number; width:number; height:number; minimized?:boolean }
+const apps: Record<AppId,{title:string;icon:typeof Globe;color:string}> = { browser:{title:'Nebula Browser',icon:Globe,color:'#73a7ff'}, files:{title:'My Files',icon:Folder,color:'#ffd06e'}, notes:{title:'Notes',icon:FileText,color:'#ff8cbd'}, terminal:{title:'Terminal',icon:Terminal,color:'#86edb5'}, calculator:{title:'Calculator',icon:Calculator,color:'#b79cff'}, settings:{title:'Settings',icon:Settings,color:'#b9c4df'} }
+const ids = Object.keys(apps) as AppId[]
 
-const apps: Record<AppId, { title: string; icon: IconType; color: string }> = {
-  browser: { title: 'Nebula Browser', icon: Globe, color: '#73a7ff' },
-  files: { title: 'My Files', icon: Folder, color: '#ffd06e' },
-  notes: { title: 'Notes', icon: FileText, color: '#ff8cbd' },
-  terminal: { title: 'Terminal', icon: Terminal, color: '#86edb5' },
-  calculator: { title: 'Calculator', icon: Calculator, color: '#b79cff' },
-  settings: { title: 'Settings', icon: Settings, color: '#b9c4df' },
+export default function App(){
+ const [windows,setWindows]=useState<Win[]>([]),[active,setActive]=useState<number|null>(null),[menu,setMenu]=useState(false),[boot,setBoot]=useState(true),[now,setNow]=useState(new Date())
+ useEffect(()=>{const t=setTimeout(()=>setBoot(false),900), clock=setInterval(()=>setNow(new Date()),1000);return()=>{clearTimeout(t);clearInterval(clock)}},[])
+ const open=(app:AppId)=>{const old=windows.find(w=>w.app===app);if(old){setWindows(ws=>ws.map(w=>w.id===old.id?{...w,minimized:false}:w));setActive(old.id);return}const id=Date.now(),n=windows.length;setWindows(ws=>[...ws,{id,app,x:100+n*28,y:76+n*24,width:app==='browser'?790:550,height:app==='browser'?520:405}]);setActive(id);setMenu(false)}
+ const update=(id:number, patch:Partial<Win>)=>setWindows(ws=>ws.map(w=>w.id===id?{...w,...patch}:w))
+ if(boot)return <div className="boot"><div className="boot-logo"><Zap size={27}/></div><b>nova<span>OS</span></b><div className="boot-bar"><i/></div><small>Starting workspace...</small></div>
+ return <main className="desktop" onClick={()=>setMenu(false)}><div className="aurora aurora-one"/><div className="aurora aurora-two"/><header className="topbar"><div className="brand"><span className="brand-mark"><Zap size={15}/></span><strong>nova</strong><small>OS</small></div><span className="workspace">Personal workspace · Online</span><time>{now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}</time></header><section className="welcome"><p className="eyebrow">YOUR PERSONAL WEB DESKTOP</p><h1>Good evening, Eduardo.</h1><p>Ideas, projects, and the open web — all in one focused space.</p></section><div className="shortcuts"><Shortcut icon={Globe} label="Browser" color="#73a7ff" onOpen={()=>open('browser')}/><Shortcut icon={Folder} label="My Files" color="#ffd06e" onOpen={()=>open('files')}/><Shortcut icon={FileText} label="Notes" color="#ff8cbd" onOpen={()=>open('notes')}/></div>{windows.map(w=>!w.minimized&&<Window key={w.id} item={w} active={active===w.id} update={update} focus={()=>setActive(w.id)} close={()=>{setWindows(ws=>ws.filter(x=>x.id!==w.id));setActive(a=>a===w.id?null:a)}} minimize={()=>update(w.id,{minimized:true})}/>)}<nav className="dock" onClick={e=>e.stopPropagation()}><button className="launcher" onClick={()=>setMenu(!menu)}><Menu size={20}/></button>{ids.slice(0,5).map(id=>{const I=apps[id].icon;return <button className="dock-app" key={id} title={apps[id].title} onClick={()=>open(id)}><I size={19} color={apps[id].color}/>{windows.some(w=>w.app===id&&!w.minimized)&&<i/>}</button>})}</nav>{menu&&<div className="launcher-menu" onClick={e=>e.stopPropagation()}><div className="menu-title"><div><b>Applications</b><small>Everything you need</small></div><Search size={17}/></div><div className="app-grid">{ids.map(id=>{const I=apps[id].icon;return <button key={id} onClick={()=>open(id)}><span style={{background:apps[id].color}}><I size={20}/></span><label>{apps[id].title.replace('Nebula ','')}</label></button>})}</div></div>}</main>
 }
-
-function App() {
-  const [windows, setWindows] = useState<WindowState[]>([])
-  const [active, setActive] = useState<number | null>(null)
-  const [launcherOpen, setLauncherOpen] = useState(false)
-  const [now, setNow] = useState(new Date())
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000)
-    return () => window.clearInterval(timer)
-  }, [])
-
-  function openApp(app: AppId) {
-    const existing = windows.find((item) => item.app === app)
-    if (existing) {
-      setActive(existing.id)
-      setWindows((items) => items.map((item) => item.id === existing.id ? { ...item, minimized: false } : item))
-      setLauncherOpen(false)
-      return
-    }
-    const id = Date.now()
-    const offset = windows.length * 26
-    setWindows((items) => [...items, { id, app, x: 100 + offset, y: 74 + offset, width: app === 'browser' ? 780 : 540, height: app === 'browser' ? 510 : 390 }])
-    setActive(id)
-    setLauncherOpen(false)
-  }
-
-  function closeApp(id: number) {
-    setWindows((items) => items.filter((item) => item.id !== id))
-    setActive((current) => current === id ? null : current)
-  }
-
-  return <main className="desktop" onClick={() => setLauncherOpen(false)}>
-    <div className="aurora aurora-one" /><div className="aurora aurora-two" />
-    <header className="topbar">
-      <div className="brand"><span className="brand-mark"><Zap size={15} /></span><strong>nova</strong><small>OS</small></div>
-      <span className="workspace">Personal workspace</span>
-      <time>{now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</time>
-    </header>
-
-    <section className="welcome"><p className="eyebrow">YOUR PERSONAL WEB DESKTOP</p><h1>Good evening, Eduardo.</h1><p>Ideas, projects, and the open web — all in one focused space.</p></section>
-    <div className="shortcuts"><Shortcut icon={Globe} label="Browser" color="#73a7ff" onOpen={() => openApp('browser')} /><Shortcut icon={Folder} label="My Files" color="#ffd06e" onOpen={() => openApp('files')} /><Shortcut icon={FileText} label="Notes" color="#ff8cbd" onOpen={() => openApp('notes')} /></div>
-
-    {windows.map((item) => {
-      if (item.minimized) return null
-      const meta = apps[item.app]
-      return <Window key={item.id} item={item} meta={meta} active={active === item.id} onFocus={() => setActive(item.id)} onClose={() => closeApp(item.id)} onMinimize={() => setWindows((items) => items.map((window) => window.id === item.id ? { ...window, minimized: true } : window))} />
-    })}
-
-    <nav className="dock" onClick={(event) => event.stopPropagation()}><button className="launcher" onClick={() => setLauncherOpen((value) => !value)}><Menu size={20} /></button>{(Object.keys(apps) as AppId[]).slice(0, 5).map((id) => { const Icon = apps[id].icon; return <button className="dock-app" key={id} title={apps[id].title} onClick={() => openApp(id)}><Icon size={19} color={apps[id].color} />{windows.some((window) => window.app === id && !window.minimized) && <i />}</button> })}</nav>
-    {launcherOpen && <div className="launcher-menu" onClick={(event) => event.stopPropagation()}><div className="menu-title"><div><b>Applications</b><small>Everything you need</small></div><Search size={17} /></div><div className="app-grid">{(Object.keys(apps) as AppId[]).map((id) => { const Icon = apps[id].icon; return <button key={id} onClick={() => openApp(id)}><span style={{ background: apps[id].color }}><Icon size={20} /></span><label>{apps[id].title.replace('Nebula ', '')}</label></button> })}</div></div>}
-  </main>
-}
-
-function Shortcut({ icon: Icon, label, color, onOpen }: { icon: IconType; label: string; color: string; onOpen: () => void }) { return <button className="shortcut" onDoubleClick={onOpen}><span style={{ background: color }}><Icon size={24} /></span>{label}</button> }
-
-function Window({ item, meta, active, onFocus, onClose, onMinimize }: { item: WindowState; meta: typeof apps[AppId]; active: boolean; onFocus: () => void; onClose: () => void; onMinimize: () => void }) {
-  const Icon = meta.icon
-  return <article className={'window ' + (active ? 'active' : '')} style={{ left: item.x, top: item.y, width: item.width, height: item.height, zIndex: active ? 10 : 3 }} onMouseDown={onFocus}><header className="window-head"><span><Icon size={15} color={meta.color} />{meta.title}</span><div><button onClick={onMinimize}><Minus size={15} /></button><button onClick={onClose}><X size={15} /></button></div></header><div className="window-body">{item.app === 'browser' && <Browser />} {item.app === 'files' && <Files />} {item.app === 'notes' && <Notes />} {item.app === 'terminal' && <TerminalApp />} {item.app === 'calculator' && <CalculatorApp />} {item.app === 'settings' && <SettingsApp />}</div></article>
-}
-
-function Browser() { const [address, setAddress] = useState('https://example.com'); const [page, setPage] = useState('https://example.com'); const go = (event: React.FormEvent) => { event.preventDefault(); setPage(address.startsWith('http') ? address : `https://${address}`) }; return <div className="browser"><div className="tabs">🌐 New tab <span>×</span></div><form className="address" onSubmit={go}><input value={address} onChange={(event) => setAddress(event.target.value)} /><button>Go</button></form><div className="browser-page"><div className="browser-hero"><div className="orb"><Globe size={29} /></div><h2>Explore the open web</h2><p>Enter an address to begin browsing.</p><form className="search-box" onSubmit={go}><Search size={16} /><input value={address} onChange={(event) => setAddress(event.target.value)} /><button>Open</button></form><small>Proxy-ready browsing · private by design</small></div><iframe title="web preview" src={page} /></div></div> }
-function Files() { return <div className="files"><aside><b>LOCATIONS</b><p className="selected"><Folder size={14} /> My Files</p><p><Folder size={14} /> Desktop</p><p><Zap size={14} /> Applications</p></aside><section><div className="file-toolbar"><strong>My Files</strong><button>＋ New</button></div><div className="file-grid"><File icon={Folder} name="Documents" /><File icon={Folder} name="Downloads" /><File icon={FileText} name="Welcome.txt" /></div></section></div> }
-function File({ icon: Icon, name }: { icon: IconType; name: string }) { return <div className="file"><Icon size={32} color={name.includes('.') ? '#ff8cbd' : '#ffd06e'} /><span>{name}</span></div> }
-function Notes() { const [value, setValue] = useState('Welcome to NovaOS.\n\nYour workspace is ready.'); return <textarea className="notes" value={value} onChange={(event) => setValue(event.target.value)} /> }
-function TerminalApp() { return <div className="terminal"><p><b>nova@workspace</b>:~$ neofetch</p><p className="green">NovaOS 0.1 · React workspace<br />Memory: virtual · Shell: nova-sh</p><p><b>nova@workspace</b>:~$ <span className="cursor">▌</span></p></div> }
-function CalculatorApp() { const [value, setValue] = useState(''); const press = (key: string) => { if (key === 'C') return setValue(''); if (key === '=') { try { setValue(String(Function(`return ${value}`)())) } catch { setValue('Error') }; return }; setValue((current) => current + key) }; return <div className="calculator"><div className="display">{value || '0'}</div><div className="keypad">{'789/456*123-0.C=+'.split('').map((key) => <button key={key} onClick={() => press(key)}>{key}</button>)}</div></div> }
-function SettingsApp() { return <div className="settings"><Setting title="Appearance" detail="Glass dark theme" /><Setting title="Animations" detail="Fluid window transitions" /><Setting title="Proxy browser" detail="Safe relay when configured" badge="READY" /></div> }
-function Setting({ title, detail, badge }: { title: string; detail: string; badge?: string }) { return <div className="setting"><div><b>{title}</b><small>{detail}</small></div>{badge ? <em>{badge}</em> : <span className="toggle" />}</div> }
-
-export default App
+function Shortcut({icon:I,label,color,onOpen}:{icon:typeof Globe;label:string;color:string;onOpen:()=>void}){return <button className="shortcut" onDoubleClick={onOpen}><span style={{background:color}}><I size={24}/></span>{label}</button>}
+function Window({item,active,update,focus,close,minimize}:{item:Win;active:boolean;update:(id:number,p:Partial<Win>)=>void;focus:()=>void;close:()=>void;minimize:()=>void}){const meta=apps[item.app],I=meta.icon;const drag=(e:React.PointerEvent)=>{if((e.target as HTMLElement).closest('button'))return;const sx=e.clientX,sy=e.clientY,ox=item.x,oy=item.y;const move=(ev:PointerEvent)=>update(item.id,{x:Math.max(5,ox+ev.clientX-sx),y:Math.max(58,oy+ev.clientY-sy)});const up=()=>{window.removeEventListener('pointermove',move);window.removeEventListener('pointerup',up)};window.addEventListener('pointermove',move);window.addEventListener('pointerup',up)};return <article className={'window '+(active?'active':'')} style={{left:item.x,top:item.y,width:item.width,height:item.height,zIndex:active?10:3}} onMouseDown={focus}><header className="window-head" onPointerDown={drag}><span><I size={15} color={meta.color}/>{meta.title}</span><div><button onClick={minimize}><Minus size={15}/></button><button onClick={close}><X size={15}/></button></div></header><div className="window-body">{item.app==='browser'&&<Browser/>}{item.app==='files'&&<Files/>}{item.app==='notes'&&<Notes/>}{item.app==='terminal'&&<TerminalApp/>}{item.app==='calculator'&&<CalculatorApp/>}{item.app==='settings'&&<SettingsApp/>}</div></article>}
+function Browser(){const[address,setAddress]=useState('https://example.com'),[page,setPage]=useState('/api/proxy?url='+encodeURIComponent('https://example.com')),go=(e:React.FormEvent)=>{e.preventDefault();const value=address.match(/^https?:\\/\\//)?address:'https://'+address;setAddress(value);setPage('/api/proxy?url='+encodeURIComponent(value))};return <div className="browser"><div className="tabs">🌐 New tab <span>×</span></div><form className="address" onSubmit={go}><input aria-label="Address" value={address} onChange={e=>setAddress(e.target.value)}/><button>Go</button></form><div className="browser-page"><div className="browser-hero"><div className="orb"><Globe size={29}/></div><h2>Explore the open web</h2><p>Proxy-backed browsing for approved domains.</p><form className="search-box" onSubmit={go}><Search size={16}/><input value={address} onChange={e=>setAddress(e.target.value)}/><button>Open</button></form><small>Allowlisted relay · private-network targets blocked</small></div><iframe title="proxied web page" sandbox="allow-forms allow-modals allow-popups" src={page}/></div></div>}
+function Files(){return <div className="files"><aside><b>LOCATIONS</b><p className="selected"><Folder size={14}/> My Files</p><p><Folder size={14}/> Desktop</p><p><Zap size={14}/> Applications</p></aside><section><div className="file-toolbar"><strong>My Files</strong><button>＋ New</button></div><div className="file-grid"><File icon={Folder} name="Documents"/><File icon={Folder} name="Downloads"/><File icon={FileText} name="Welcome.txt"/></div></section></div>}
+function File({icon:I,name}:{icon:typeof Folder;name:string}){return <div className="file"><I size={32} color={name.includes('.')?'#ff8cbd':'#ffd06e'}/><span>{name}</span></div>}
+function Notes(){const[v,setV]=useState('Welcome to NovaOS.\\n\\nYour workspace is ready.');return <textarea className="notes" value={v} onChange={e=>setV(e.target.value)}/>}
+function TerminalApp(){return <div className="terminal"><p><b>nova@workspace</b>:~$ neofetch</p><p className="green">NovaOS 0.2 · Proxy online<br/>Memory: virtual · Shell: nova-sh</p><p><b>nova@workspace</b>:~$ <span className="cursor">▌</span></p></div>}
+function CalculatorApp(){const[v,setV]=useState(''),press=(k:string)=>{if(k==='C')return setV('');if(k==='='){try{setV(String(Function('return '+v)()))}catch{setV('Error')}return}setV(x=>x+k)};return <div className="calculator"><div className="display">{v||'0'}</div><div className="keypad">{'789/456*123-0.C=+'.split('').map(k=><button key={k} onClick={()=>press(k)}>{k}</button>)}</div></div>}
+function SettingsApp(){return <div className="settings"><div className="setting"><div><b>Appearance</b><small>Glass dark theme</small></div><span className="toggle"/></div><div className="setting"><div><b>Browser relay</b><small>Allowlisted proxy with SSRF protection</small></div><em>READY</em></div></div>}

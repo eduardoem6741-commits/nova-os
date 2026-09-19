@@ -1,20 +1,40 @@
 # NovaOS
 
-A Puter-inspired web desktop with a ProzillaOS-inspired visual style. NovaOS is a React + Vite + TypeScript starter for experimenting with browser-based operating system interfaces.
+NovaOS is a Puter-inspired web desktop with a ProzillaOS-inspired visual style.
 
-## Included in this scaffold
+## Run the desktop locally
 
-- Futuristic glass desktop shell and dock
-- App launcher with windowed apps
-- Nebula Browser preview window
-- Virtual Files, Notes, Terminal, Calculator, and Settings apps
-- Responsive mobile fallback
-
-## Run locally
+The GitHub repository displays source code; it does not execute the app. To open the actual desktop:
 
 ```bash
 npm install
-npm run dev
+npm run dev:all
 ```
 
-> The browser currently uses an iframe preview. A production proxy should be added server-side with an explicit domain allowlist, timeouts, CSP, and response sanitization.
+Open the local URL printed by Vite, normally **http://localhost:5173**. Keep that terminal running. `dev:all` starts both the Vite desktop and the local proxy server.
+
+You can also use two terminals:
+
+```bash
+npm run dev:server   # terminal 1
+npm run dev          # terminal 2
+```
+
+## Browser proxy
+
+The Browser app uses `/api/proxy?url=...`. The server validates HTTP(S) URLs, resolves DNS to block private-network targets, applies a domain allowlist, enforces a timeout, rewrites common document URLs, and adds response hardening headers.
+
+The default allowlist contains example.com, MDN, GitHub, and raw GitHub content. Add domains explicitly when developing:
+
+```bash
+PROXY_ALLOWLIST=example.com,developer.mozilla.org,nasa.gov npm run dev:server
+```
+
+Do not deploy an unrestricted open proxy. Add authentication, rate limiting, logging, a strict allowlist, and stronger HTML sanitization before making it public.
+
+## Build
+
+```bash
+npm run build
+npm run preview
+```
